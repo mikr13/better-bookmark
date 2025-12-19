@@ -6,7 +6,10 @@ export default defineConfig({
   manifest: {
     name: 'Recall It',
     description: 'Save pages as cards and build a knowledge graph',
-    permissions: ['storage', 'activeTab', 'tabs'],
+    permissions: ['storage', 'activeTab', 'tabs', 'contextMenus', 'scripting'],
     host_permissions: ['<all_urls>'],
+    icons: {
+      '128': '/icon-128.svg',
+    },
   },
 });
