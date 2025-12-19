@@ -1,4 +1,4 @@
-import type { Card, StorageData } from './types';
+import type { Card, StorageData, Connection } from './types';
 
 // Storage utility functions
 export const storage = {
@@ -66,7 +66,7 @@ export const storage = {
     return cardIds.map(id => data.cards[id]).filter(Boolean);
   },
 
-  async saveConnections(connections: any[]): Promise<void> {
+  async saveConnections(connections: Connection[]): Promise<void> {
     await chrome.storage.local.set({ connections });
   },
 };

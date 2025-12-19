@@ -33,7 +33,16 @@ function App() {
   async function handleSaveCurrentPage() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab.id) {
-      await chrome.tabs.sendMessage(tab.id, { type: 'SAVE_CURRENT_PAGE' });
+      // Send message to content script to save the page
+      chrome.tabs.sendMessage(tab.id, { type: 'SAVE_CURRENT_PAGE' }).catch(() => {
+        // If content script isn't loaded, inject it first
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id! },
+          func: () => {
+            window.postMessage({ type: 'RECALL_IT_SAVE_PAGE' }, '*');
+          },
+        });
+      });
     }
   }
 

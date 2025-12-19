@@ -7,10 +7,25 @@ export default defineContentScript({
   main() {
     console.log('Recall It: Content script loaded');
 
-    // Listen for save page requests
+    // Listen for save page requests from window messages
     window.addEventListener('message', async (event) => {
+      // Validate origin for security
+      if (event.source !== window) return;
+      
       if (event.data.type === 'RECALL_IT_SAVE_PAGE') {
         await saveCurrentPage();
+      }
+    });
+
+    // Listen for messages from extension (popup/background)
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.type === 'SAVE_CURRENT_PAGE') {
+        saveCurrentPage().then(() => {
+          sendResponse({ success: true });
+        }).catch((error) => {
+          sendResponse({ success: false, error: error.message });
+        });
+        return true; // Keep the message channel open for async response
       }
     });
 

@@ -88,5 +88,5 @@ export function categorizeContent(keywords: string[]): string {
 }
 
 export function generateCardId(): string {
-  return `card_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `card_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
