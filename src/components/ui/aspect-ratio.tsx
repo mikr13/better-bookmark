@@ -1,4 +1,4 @@
-import { cn } from "@/lib/cn"
+import { cn } from "@/lib/cn";
 
 function AspectRatio({
   ratio,
@@ -16,7 +16,7 @@ function AspectRatio({
       className={cn("relative aspect-(--ratio)", className)}
       {...props}
     />
-  )
+  );
 }
 
-export { AspectRatio }
+export { AspectRatio };

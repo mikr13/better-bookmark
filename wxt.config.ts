@@ -1,7 +1,8 @@
+import { fileURLToPath, URL } from "node:url";
+
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { reactCompilerPreset } from "@vitejs/plugin-react";
-import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "wxt";
 
 export default defineConfig({
@@ -12,7 +13,7 @@ export default defineConfig({
     description:
       "Local-first AI bookmark graph with BYOK multimodal analysis and seen-before annotations.",
     permissions: ["activeTab", "scripting", "sidePanel", "storage", "tabs"],
-    host_permissions: ["https://api.openai.com/*"],
+    host_permissions: ["<all_urls>", "https://api.openai.com/*"],
     optional_host_permissions: ["http://*/*", "https://*/*"],
     action: {
       default_title: "Better Bookmarks",

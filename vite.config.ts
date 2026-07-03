@@ -1,7 +1,8 @@
+import { fileURLToPath, URL } from "node:url";
+
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite-plus";
 import { WxtVitest } from "wxt/testing/vitest-plugin";
-import { fileURLToPath, URL } from "node:url";
-import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [WxtVitest(), tailwindcss()],

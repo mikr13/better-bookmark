@@ -1,0 +1,199 @@
+import { z } from "zod";
+
+export const ThemeSchema = z.enum(["system", "light", "dark"]);
+export type ThemePreference = z.infer<typeof ThemeSchema>;
+
+export const ConceptKindSchema = z.enum([
+  "topic",
+  "entity",
+  "method",
+  "paper",
+  "product",
+  "person",
+  "place",
+  "organization",
+  "metric",
+  "other",
+]);
+export type ConceptKind = z.infer<typeof ConceptKindSchema>;
+
+export const EvidenceSourceSchema = z.enum([
+  "title",
+  "heading",
+  "article",
+  "visibleText",
+  "domOutline",
+]);
+
+export const EvidenceSpanSchema = z.object({
+  text: z.string().min(1),
+  source: EvidenceSourceSchema,
+  reason: z.string().min(1),
+});
+export type EvidenceSpan = z.infer<typeof EvidenceSpanSchema>;
+
+export const WeightedKeywordSchema = z.object({
+  term: z.string().min(2),
+  normalizedTerm: z.string().min(2),
+  kind: ConceptKindSchema,
+  relevance: z.number().int().min(0).max(100),
+  confidence: z.number().int().min(0).max(100),
+  aliases: z.array(z.string().min(2)).default([]),
+  evidenceSpans: z.array(EvidenceSpanSchema).min(1),
+});
+export type WeightedKeyword = z.infer<typeof WeightedKeywordSchema>;
+
+export const PageAnalysisSchema = z.object({
+  title: z.string().min(1),
+  summary: z.string().min(1),
+  keywords: z.array(WeightedKeywordSchema).min(1).max(40),
+  questions: z.array(z.string().min(3)).default([]),
+});
+export type PageAnalysis = z.infer<typeof PageAnalysisSchema>;
+
+export const ExtractedPageSchema = z.object({
+  url: z.string().url(),
+  title: z.string().min(1),
+  domain: z.string().min(1),
+  description: z.string().optional(),
+  headings: z.array(z.string()).default([]),
+  articleText: z.string().default(""),
+  visibleText: z.string().default(""),
+  domOutline: z.string().default(""),
+});
+export type ExtractedPage = z.infer<typeof ExtractedPageSchema>;
+
+export type ProviderModel = {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+};
+
+export type BookmarkPageRecord = {
+  readonly id: string;
+  readonly url: string;
+  readonly title: string;
+  readonly domain: string;
+  readonly description?: string;
+  readonly summary: string;
+  readonly savedAt: string;
+  readonly updatedAt: string;
+};
+
+export const ConceptRecordSchema = z.object({
+  id: z.string().min(1),
+  term: z.string().min(1),
+  normalizedTerm: z.string().min(1),
+  kind: ConceptKindSchema,
+  aliases: z.array(z.string()).default([]),
+  lastSeenAt: z.string().min(1),
+});
+export type ConceptRecord = z.infer<typeof ConceptRecordSchema>;
+
+export type PageConceptEdgeRecord = {
+  readonly id: string;
+  readonly pageId: string;
+  readonly conceptId: string;
+  readonly normalizedTerm: string;
+  readonly aiRelevance: number;
+  readonly modelConfidence: number;
+  readonly pageKeywordScore: number;
+  readonly evidenceSpans: readonly EvidenceSpan[];
+};
+
+export type ProviderCallRecord = {
+  readonly id: string;
+  readonly pageId?: string;
+  readonly provider: "openai";
+  readonly model: string;
+  readonly status: "succeeded" | "failed";
+  readonly createdAt: string;
+  readonly payloadBytes: number;
+  readonly errorMessage?: string;
+};
+
+export type SavedBookmark = BookmarkPageRecord & {
+  readonly concepts: ReadonlyArray<ConceptRecord & { readonly score: number }>;
+};
+
+export type AppSettings = {
+  readonly theme: ThemePreference;
+  readonly selectedOpenAIModel: string;
+  readonly openAIKeyConfigured: boolean;
+  readonly highlightHostAccessGranted: boolean;
+};
+
+export const defaultSettings: AppSettings = {
+  theme: "system",
+  selectedOpenAIModel: "gpt-5.5",
+  openAIKeyConfigured: false,
+  highlightHostAccessGranted: false,
+};
+
+export const PAGE_ANALYSIS_JSON_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["title", "summary", "keywords", "questions"],
+  properties: {
+    title: { type: "string" },
+    summary: { type: "string" },
+    questions: { type: "array", items: { type: "string" } },
+    keywords: {
+      type: "array",
+      minItems: 1,
+      maxItems: 40,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "term",
+          "normalizedTerm",
+          "kind",
+          "relevance",
+          "confidence",
+          "aliases",
+          "evidenceSpans",
+        ],
+        properties: {
+          term: { type: "string" },
+          normalizedTerm: { type: "string" },
+          kind: {
+            type: "string",
+            enum: [
+              "topic",
+              "entity",
+              "method",
+              "paper",
+              "product",
+              "person",
+              "place",
+              "organization",
+              "metric",
+              "other",
+            ],
+          },
+          relevance: { type: "integer", minimum: 0, maximum: 100 },
+          confidence: { type: "integer", minimum: 0, maximum: 100 },
+          aliases: { type: "array", items: { type: "string" } },
+          evidenceSpans: {
+            type: "array",
+            minItems: 1,
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["text", "source", "reason"],
+              properties: {
+                text: { type: "string" },
+                source: {
+                  type: "string",
+                  enum: ["title", "heading", "article", "visibleText", "domOutline"],
+                },
+                reason: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
