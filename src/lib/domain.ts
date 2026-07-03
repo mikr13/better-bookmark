@@ -3,6 +3,16 @@ import { z } from "zod";
 export const ThemeSchema = z.enum(["system", "light", "dark"]);
 export type ThemePreference = z.infer<typeof ThemeSchema>;
 
+export const AIProviderSchema = z.enum([
+  "openai",
+  "anthropic",
+  "groq",
+  "deepseek",
+  "gemini",
+  "ollama",
+]);
+export type AIProvider = z.infer<typeof AIProviderSchema>;
+
 export const HighlightTriggerSchema = z.enum(["hover", "click"]);
 export type HighlightTrigger = z.infer<typeof HighlightTriggerSchema>;
 
@@ -118,7 +128,7 @@ export type PageConceptEdgeRecord = {
 export type ProviderCallRecord = {
   readonly id: string;
   readonly pageId?: string;
-  readonly provider: "openai";
+  readonly provider: AIProvider;
   readonly model: string;
   readonly status: "succeeded" | "failed";
   readonly createdAt: string;
@@ -132,7 +142,10 @@ export type SavedBookmark = BookmarkPageRecord & {
 
 export type AppSettings = {
   readonly theme: ThemePreference;
+  readonly selectedAIProvider: AIProvider;
   readonly selectedOpenAIModel: string;
+  readonly selectedProviderModels: Partial<Record<AIProvider, string>>;
+  readonly configuredProviders: Partial<Record<AIProvider, boolean>>;
   readonly openAIKeyConfigured: boolean;
   readonly highlightHostAccessGranted: boolean;
   readonly highlightTrigger: HighlightTrigger;
@@ -141,7 +154,17 @@ export type AppSettings = {
 
 export const defaultSettings: AppSettings = {
   theme: "system",
+  selectedAIProvider: "openai",
   selectedOpenAIModel: "gpt-5.5",
+  selectedProviderModels: {
+    openai: "gpt-5.5",
+    anthropic: "claude-haiku-4-5-20251001",
+    groq: "llama-4-maverick",
+    deepseek: "deepseek-chat",
+    gemini: "models/gemini-2.5-flash",
+    ollama: "llama3.2-vision",
+  },
+  configuredProviders: { ollama: true },
   openAIKeyConfigured: false,
   highlightHostAccessGranted: false,
   highlightTrigger: "click",

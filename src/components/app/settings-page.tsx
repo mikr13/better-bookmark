@@ -4,6 +4,8 @@ import { useState } from "react";
 import { browser } from "wxt/browser";
 
 import { AppShell } from "@/components/app/app-shell";
+import type { ShellTab } from "@/components/app/app-shell";
+import { KnowledgeGraphPanel } from "@/components/app/knowledge-graph-panel";
 import { ProviderSettings } from "@/components/app/provider-settings";
 import { SavedBookmarksList } from "@/components/app/saved-bookmarks-list";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +33,7 @@ function triggerFromToggleValue(values: readonly string[]): HighlightTrigger | n
 }
 
 export function SettingsPage() {
-  const [tab, setTab] = useState<"settings" | "saved">("settings");
+  const [tab, setTab] = useState<ShellTab>("settings");
   const queryClient = useQueryClient();
   const settings = useQuery({
     queryKey: ["settings"],
@@ -155,9 +157,9 @@ export function SettingsPage() {
               </CardContent>
             </Card>
           </>
-        ) : (
-          <SavedBookmarksList />
-        )}
+        ) : null}
+        {tab === "saved" ? <SavedBookmarksList /> : null}
+        {tab === "graph" ? <KnowledgeGraphPanel /> : null}
       </main>
     </AppShell>
   );

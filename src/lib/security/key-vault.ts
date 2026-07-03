@@ -1,44 +1,94 @@
-import { keyVaultItem, setSettings } from "@/lib/app-storage";
+import { isPlausibleProviderKey, providerNeedsApiKey } from "@/lib/ai/providers";
+import { appSettingsItem, keyVaultItem, setSettings } from "@/lib/app-storage";
+import type { AIProvider } from "@/lib/domain";
 import { decryptText, encryptText, generateSalt } from "@/lib/security/encryption";
 import { getBrowserFingerprint } from "@/lib/security/fingerprint";
 
 export function isPlausibleOpenAIKey(value: string): boolean {
-  return value.trim().startsWith("sk-") && value.trim().length > 20;
+  return isPlausibleProviderKey("openai", value);
 }
 
-export async function storeOpenAIKey(apiKey: string): Promise<void> {
+export async function storeProviderKey(provider: AIProvider, apiKey: string): Promise<void> {
   const trimmed = apiKey.trim();
 
-  if (!isPlausibleOpenAIKey(trimmed)) {
-    throw new Error("OpenAI API key should start with sk- and be longer than 20 characters.");
+  if (!providerNeedsApiKey(provider)) {
+    return;
+  }
+
+  if (!isPlausibleProviderKey(provider, trimmed)) {
+    throw new Error("API key format is invalid.");
   }
 
   const salt = await generateSalt();
   const secret = await getBrowserFingerprint();
   const encrypted = await encryptText(trimmed, secret, salt);
-  await keyVaultItem.setValue({ openai: { encrypted, salt } });
-  await setSettings({ openAIKeyConfigured: true });
+  const currentVault = await keyVaultItem.getValue();
+  const currentSettings = await appSettingsItem.getValue();
+  await keyVaultItem.setValue({ ...currentVault, [provider]: { encrypted, salt } });
+  await setSettings({
+    configuredProviders: { ...currentSettings.configuredProviders, [provider]: true },
+    openAIKeyConfigured: provider === "openai" ? true : currentSettings.openAIKeyConfigured,
+  });
 }
 
-export async function getOpenAIKey(): Promise<string | null> {
-  const vault = await keyVaultItem.getValue();
+export async function storeOpenAIKey(apiKey: string): Promise<void> {
+  await storeProviderKey("openai", apiKey);
+}
 
-  if (!vault.openai) {
+async function getStoredProviderKey(provider: AIProvider): Promise<string | null> {
+  const vault = await keyVaultItem.getValue();
+  const encryptedKey = vault[provider];
+
+  if (!encryptedKey) {
     return null;
   }
 
   try {
     return await decryptText(
-      vault.openai.encrypted,
+      encryptedKey.encrypted,
       await getBrowserFingerprint(),
-      vault.openai.salt,
+      encryptedKey.salt,
     );
   } catch {
     return null;
   }
 }
 
+export async function getOpenAIKey(): Promise<string | null> {
+  return getStoredProviderKey("openai");
+}
+
+function assertNever(_value: never): never {
+  throw new Error("Unsupported AI provider.");
+}
+
+export function getProviderApiKey(provider: AIProvider): Promise<string | null> {
+  switch (provider) {
+    case "openai":
+    case "anthropic":
+    case "groq":
+    case "deepseek":
+    case "gemini":
+      return getStoredProviderKey(provider);
+    case "ollama":
+      return Promise.resolve(null);
+    default:
+      return assertNever(provider);
+  }
+}
+
+export async function deleteProviderKey(provider: AIProvider): Promise<void> {
+  const currentVault = await keyVaultItem.getValue();
+  const currentSettings = await appSettingsItem.getValue();
+  const nextVault = { ...currentVault };
+  delete nextVault[provider];
+  await keyVaultItem.setValue(nextVault);
+  await setSettings({
+    configuredProviders: { ...currentSettings.configuredProviders, [provider]: false },
+    openAIKeyConfigured: provider === "openai" ? false : currentSettings.openAIKeyConfigured,
+  });
+}
+
 export async function deleteOpenAIKey(): Promise<void> {
-  await keyVaultItem.setValue({});
-  await setSettings({ openAIKeyConfigured: false });
+  await deleteProviderKey("openai");
 }

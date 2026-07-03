@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 
-type ShellTab = "settings" | "saved";
+export type ShellTab = "settings" | "saved" | "graph";
 
 export function AppShell({
   activeTab,
@@ -31,7 +31,7 @@ export function AppShell({
             <span>Better Bookmarks</span>
           </div>
           {onTabChange ? (
-            <nav className="bg-muted mx-auto grid w-full max-w-xl grid-cols-2 rounded-xl p-1">
+            <nav className="bg-muted mx-auto grid w-full max-w-xl grid-cols-3 rounded-xl p-1">
               <button
                 type="button"
                 className={cn(
@@ -51,6 +51,16 @@ export function AppShell({
                 onClick={() => onTabChange("saved")}
               >
                 Saved
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                  activeTab === "graph" ? "bg-card shadow-sm" : "text-muted-foreground",
+                )}
+                onClick={() => onTabChange("graph")}
+              >
+                Graph
               </button>
             </nav>
           ) : (

@@ -1,7 +1,12 @@
 import { browser } from "wxt/browser";
 import { storage } from "wxt/utils/storage";
 
-import { defaultSettings, type AppSettings, type HighlightSiteRuleScope } from "@/lib/domain";
+import {
+  defaultSettings,
+  type AIProvider,
+  type AppSettings,
+  type HighlightSiteRuleScope,
+} from "@/lib/domain";
 import { createHighlightSiteRule, normalizedHighlightHost } from "@/lib/page/highlight-settings";
 
 export type EncryptedSecret = {
@@ -9,20 +14,50 @@ export type EncryptedSecret = {
   readonly salt: string;
 };
 
-type KeyVaultState = {
-  readonly openai?: EncryptedSecret;
-};
+type KeyVaultState = Partial<Record<AIProvider, EncryptedSecret>>;
 
-type AppSettingsV1 = Omit<AppSettings, "highlightTrigger" | "highlightSiteRules">;
+type AppSettingsV1 = Omit<
+  AppSettings,
+  | "highlightTrigger"
+  | "highlightSiteRules"
+  | "selectedAIProvider"
+  | "selectedProviderModels"
+  | "configuredProviders"
+>;
+type AppSettingsV2 = Omit<
+  AppSettings,
+  "selectedAIProvider" | "selectedProviderModels" | "configuredProviders"
+>;
+type AppSettingsV3 = Omit<AppSettings, "configuredProviders">;
 
 export const appSettingsItem = storage.defineItem<AppSettings>("local:better-bookmarks:settings", {
   fallback: defaultSettings,
-  version: 2,
+  version: 4,
   migrations: {
-    2: (settings: AppSettingsV1): AppSettings => ({
+    2: (settings: AppSettingsV1): AppSettingsV2 => ({
       ...settings,
       highlightTrigger: defaultSettings.highlightTrigger,
       highlightSiteRules: defaultSettings.highlightSiteRules,
+    }),
+    3: (settings: AppSettingsV2): AppSettingsV3 => ({
+      ...settings,
+      selectedAIProvider: defaultSettings.selectedAIProvider,
+      selectedProviderModels: {
+        ...defaultSettings.selectedProviderModels,
+        openai: settings.selectedOpenAIModel,
+      },
+    }),
+    4: (settings: AppSettingsV3): AppSettings => ({
+      ...settings,
+      selectedProviderModels: {
+        ...defaultSettings.selectedProviderModels,
+        ...settings.selectedProviderModels,
+        openai: settings.selectedOpenAIModel,
+      },
+      configuredProviders: {
+        ...defaultSettings.configuredProviders,
+        openai: settings.openAIKeyConfigured,
+      },
     }),
   },
 });

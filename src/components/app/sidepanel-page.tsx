@@ -7,14 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { analyzePageWithOpenAI } from "@/lib/ai/openai";
+import {
+  getProviderConfig,
+  isProviderConfigured,
+  providerNeedsApiKey,
+  selectedModelForProvider,
+} from "@/lib/ai/providers";
 import { appSettingsItem } from "@/lib/app-storage";
 import { searchBookmarks, saveAnalyzedBookmark } from "@/lib/bookmarks/repository";
 import { type ExtractedPage, ExtractedPageSchema } from "@/lib/domain";
 import { REFRESH_HIGHLIGHTS_MESSAGE } from "@/lib/page/highlight-messages";
 import { resizeScreenshot } from "@/lib/page/image";
 import { nonWebPageSaveMessage, pageSaveFailureMessage, saveablePageUrl } from "@/lib/page/tab";
-import { getOpenAIKey } from "@/lib/security/key-vault";
+import { getProviderApiKey } from "@/lib/security/key-vault";
 
 type ActiveTab = {
   readonly id: number;
@@ -76,27 +81,33 @@ export function SidepanelPage() {
       const tab = await activeTab();
       const page = await extractActivePage(tab.id);
       const screenshotDataUrl = await captureScreenshot(tab.windowId);
-      const apiKey = await getOpenAIKey();
+      const currentSettings = await appSettingsItem.getValue();
+      const provider = currentSettings.selectedAIProvider;
+      const providerConfig = getProviderConfig(provider);
+      const apiKey = await getProviderApiKey(provider);
 
-      if (!apiKey) {
-        throw new Error("Add your OpenAI API key in settings first.");
+      if (!isProviderConfigured(currentSettings)) {
+        throw new Error(`Configure ${providerConfig.name} in settings before saving.`);
       }
 
-      setStatus("Analyzing with OpenAI");
-      const model = settings.data?.selectedOpenAIModel ?? "gpt-5.5";
-      const analysis = await analyzePageWithOpenAI({
-        apiKey,
-        model,
-        page,
-        screenshotDataUrl,
-      });
+      if (providerNeedsApiKey(provider) && !apiKey) {
+        throw new Error(`Add your ${providerConfig.name} API key in settings first.`);
+      }
+
+      setStatus(`Analyzing with ${providerConfig.name}`);
+      const model = selectedModelForProvider(currentSettings, provider);
+      const { analyzePageWithProvider } = await import("@/lib/ai/page-analysis");
+      const analysisInput = apiKey
+        ? { provider, apiKey, model, page, screenshotDataUrl }
+        : { provider, model, page, screenshotDataUrl };
+      const analysis = await analyzePageWithProvider(analysisInput);
       setStatus("Saving graph");
       return saveAnalyzedBookmark({
         page,
         analysis,
         providerCall: {
           id: crypto.randomUUID(),
-          provider: "openai",
+          provider,
           model,
           createdAt: new Date().toISOString(),
           payloadBytes: new Blob([JSON.stringify(page), screenshotDataUrl]).size,
@@ -112,6 +123,7 @@ export function SidepanelPage() {
       setStatus(pageSaveFailureMessage(error));
     },
   });
+  const readyToSave = settings.data ? isProviderConfigured(settings.data) : false;
 
   return (
     <main className="bg-background text-foreground min-h-[100dvh] p-3">
@@ -140,15 +152,15 @@ export function SidepanelPage() {
             <Button
               type="button"
               className="w-full"
-              disabled={savePage.isPending || !settings.data?.openAIKeyConfigured}
+              disabled={savePage.isPending || !readyToSave}
               onClick={() => savePage.mutate()}
             >
               {savePage.isPending ? <Loader2 className="size-4 animate-spin" /> : <BookOpen />}
               Save page
             </Button>
-            {!settings.data?.openAIKeyConfigured ? (
+            {!readyToSave ? (
               <p className="text-muted-foreground mt-2 text-xs">
-                Open settings and enter your OpenAI API key before saving.
+                Configure an AI provider in settings before saving.
               </p>
             ) : null}
           </CardContent>

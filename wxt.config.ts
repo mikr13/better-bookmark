@@ -13,7 +13,16 @@ export default defineConfig({
     description:
       "Local-first AI bookmark graph with BYOK multimodal analysis and seen-before annotations.",
     permissions: ["activeTab", "scripting", "sidePanel", "storage", "tabs"],
-    host_permissions: ["<all_urls>", "https://api.openai.com/*"],
+    host_permissions: [
+      "<all_urls>",
+      "https://api.openai.com/*",
+      "https://api.anthropic.com/*",
+      "https://api.groq.com/*",
+      "https://api.deepseek.com/*",
+      "https://generativelanguage.googleapis.com/*",
+      "http://localhost:11434/*",
+      "http://127.0.0.1:11434/*",
+    ],
     optional_host_permissions: ["http://*/*", "https://*/*"],
     action: {
       default_title: "Better Bookmarks",

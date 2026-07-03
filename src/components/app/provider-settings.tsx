@@ -1,19 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, ExternalLink, KeyRound, Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ProviderKeyRow } from "@/components/app/provider-key-row";
+import { ProviderModelSelector } from "@/components/app/provider-model-selector";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { FALLBACK_OPENAI_MODELS, listOpenAIModels, validateOpenAIKey } from "@/lib/ai/openai";
-import { appSettingsItem, setSettings } from "@/lib/app-storage";
+import { Separator } from "@/components/ui/separator";
 import {
-  deleteOpenAIKey,
-  getOpenAIKey,
-  isPlausibleOpenAIKey,
-  storeOpenAIKey,
-} from "@/lib/security/key-vault";
+  AI_PROVIDER_IDS,
+  defaultModelForProvider,
+  getProviderConfig,
+  isPlausibleProviderKey,
+  isProviderConfigured,
+  listProviderModels,
+  providerNeedsApiKey,
+  validateProviderConnection,
+} from "@/lib/ai/providers";
+import { appSettingsItem, setSettings } from "@/lib/app-storage";
+import { AIProviderSchema, type AIProvider } from "@/lib/domain";
+import { deleteProviderKey, getProviderApiKey, storeProviderKey } from "@/lib/security/key-vault";
 
 import {
   Combobox,
@@ -24,150 +28,180 @@ import {
   ComboboxList,
 } from "../ui/combobox";
 
+function parseProvider(value: string | null | undefined): AIProvider | null {
+  const parsed = AIProviderSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
 export function ProviderSettings() {
   const queryClient = useQueryClient();
-  const [apiKey, setApiKey] = useState("");
+  const [providerKeys, setProviderKeys] = useState<Partial<Record<AIProvider, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const settings = useQuery({
     queryKey: ["settings"],
     queryFn: () => appSettingsItem.getValue(),
   });
-  const models = useQuery({
-    queryKey: ["openai-models", settings.data?.openAIKeyConfigured],
-    queryFn: async () => {
-      const key = await getOpenAIKey();
-      return key ? listOpenAIModels(key) : FALLBACK_OPENAI_MODELS;
-    },
-  });
-  const saveKey = useMutation({
-    mutationFn: async () => {
+  const saveProvider = useMutation({
+    mutationFn: async (provider: AIProvider) => {
       setError(null);
-      const trimmed = apiKey.trim();
+      const current = await appSettingsItem.getValue();
+      const key = providerKeys[provider]?.trim() ?? "";
 
-      if (!isPlausibleOpenAIKey(trimmed)) {
-        throw new Error("OpenAI API key should start with sk- and be longer than 20 characters.");
+      if (providerNeedsApiKey(provider)) {
+        if (!isPlausibleProviderKey(provider, key)) {
+          throw new Error(`${getProviderConfig(provider).name} API key format is invalid.`);
+        }
+
+        const isValid = await validateProviderConnection(provider, key);
+
+        if (!isValid) {
+          throw new Error(`Invalid ${getProviderConfig(provider).name} API key.`);
+        }
+
+        await storeProviderKey(provider, key);
+      } else {
+        const isValid = await validateProviderConnection(provider);
+
+        if (!isValid) {
+          throw new Error("Ollama is not reachable at http://localhost:11434.");
+        }
+
+        await setSettings({
+          configuredProviders: { ...current.configuredProviders, [provider]: true },
+        });
       }
 
-      const isValid = await validateOpenAIKey(trimmed);
-
-      if (!isValid) {
-        throw new Error("Invalid OpenAI API key.");
-      }
-
-      await storeOpenAIKey(trimmed);
-      const fetched = await listOpenAIModels(trimmed);
-      await setSettings({ selectedOpenAIModel: fetched[0]?.id ?? "gpt-5.5" });
-      return fetched;
+      const providerKey = await getProviderApiKey(provider);
+      const models = await listProviderModels(provider, providerKey ?? undefined);
+      const selectedModel = models[0]?.id ?? defaultModelForProvider(provider);
+      await setSettings({
+        selectedAIProvider: provider,
+        selectedProviderModels: {
+          ...current.selectedProviderModels,
+          [provider]: selectedModel,
+        },
+        selectedOpenAIModel: provider === "openai" ? selectedModel : current.selectedOpenAIModel,
+      });
+      return provider;
     },
-    onSuccess: async () => {
-      setApiKey("");
+    onSuccess: async (provider) => {
+      setProviderKeys((current) => ({ ...current, [provider]: "" }));
       await queryClient.invalidateQueries({ queryKey: ["settings"] });
-      await queryClient.invalidateQueries({ queryKey: ["openai-models"] });
+      await queryClient.invalidateQueries({ queryKey: ["provider-models"] });
     },
     onError: (cause) => {
-      setError(cause instanceof Error ? cause.message : "Could not save API key.");
+      setError(cause instanceof Error ? cause.message : "Could not save provider settings.");
     },
   });
   const deleteKey = useMutation({
-    mutationFn: deleteOpenAIKey,
+    mutationFn: deleteProviderKey,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["settings"] });
-      await queryClient.invalidateQueries({ queryKey: ["openai-models"] });
+      await queryClient.invalidateQueries({ queryKey: ["provider-models"] });
     },
   });
-  const configured = settings.data?.openAIKeyConfigured ?? false;
+  const currentSettings = settings.data;
+  const selectedProvider = currentSettings?.selectedAIProvider ?? "openai";
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <CardTitle>OpenAI Provider</CardTitle>
-            <CardDescription>
-              Better Bookmarks only lists models that can use page text and screenshots.
-            </CardDescription>
-          </div>
-          {configured ? (
-            <Badge className="bg-primary text-primary-foreground">
-              <CheckCircle2 className="size-3" />
-              Active
-            </Badge>
-          ) : null}
-        </div>
+        <CardTitle>AI Provider</CardTitle>
+        <CardDescription>
+          Configure your AI provider API keys. Quality of bookmark analysis depends on the AI model
+          used.{" "}
+          <strong className="underline">Recommended to use the latest models available</strong>
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="openai-key">
-            OpenAI API key
-          </label>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
-            <Input
-              id="openai-key"
-              type="password"
-              autoComplete="off"
-              className="col-span-2 sm:col-span-1"
-              placeholder={configured ? "Saved locally. Enter a new key to replace it." : "sk-..."}
-              value={apiKey}
-              onChange={(event) => setApiKey(event.currentTarget.value)}
-            />
-            <Button
-              type="button"
-              disabled={saveKey.isPending || apiKey.trim().length === 0}
-              className="justify-center"
-              onClick={() => saveKey.mutate()}
+      <CardContent className="grid gap-6">
+        {AI_PROVIDER_IDS.map((provider) => {
+          const config = getProviderConfig(provider);
+          const hasConnection = currentSettings
+            ? isProviderConfigured(currentSettings, provider)
+            : false;
+          const isSelected = selectedProvider === provider;
+          const showModelSelector = currentSettings && hasConnection && isSelected;
+
+          return (
+            <div
+              key={provider}
+              className={
+                showModelSelector
+                  ? "grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.95fr)]"
+                  : "grid gap-3"
+              }
             >
-              {saveKey.isPending ? <Loader2 className="size-4 animate-spin" /> : <KeyRound />}
-              Save
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={!configured || deleteKey.isPending}
-              onClick={() => deleteKey.mutate()}
-              aria-label="Delete OpenAI key"
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          </div>
-          <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-sm">
-            <span>Encrypted locally; never exported by default.</span>
-            <a
-              className="text-primary inline-flex items-center gap-1 underline-offset-4 hover:underline"
-              href="https://platform.openai.com/api-keys"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Get key <ExternalLink className="size-3" />
-            </a>
-          </div>
-          {error ? <p className="text-destructive text-sm">{error}</p> : null}
-        </div>
+              <ProviderKeyRow
+                provider={provider}
+                config={config}
+                value={providerKeys[provider] ?? ""}
+                hasConnection={hasConnection}
+                isSelected={isSelected}
+                isPending={saveProvider.isPending}
+                onChange={(nextProvider, value) =>
+                  setProviderKeys((current) => ({ ...current, [nextProvider]: value }))
+                }
+                onSave={(nextProvider) => saveProvider.mutate(nextProvider)}
+                onDelete={(nextProvider) => deleteKey.mutate(nextProvider)}
+              />
+              {showModelSelector ? (
+                <ProviderModelSelector
+                  provider={provider}
+                  providerName={config.name}
+                  settings={currentSettings}
+                />
+              ) : null}
+            </div>
+          );
+        })}
+
+        {error ? <p className="text-destructive text-sm">{error}</p> : null}
+        <Separator />
 
         <div className="grid gap-2">
-          <label className="text-sm font-medium" htmlFor="openai-model">
-            Multimodal model
+          <label className="text-sm font-medium" htmlFor="current-provider">
+            Current Provider
           </label>
           <Combobox
-            id="openai-model-combobox"
-            items={models.data ?? FALLBACK_OPENAI_MODELS}
-            onValueChange={(value) => setSettings({ selectedOpenAIModel: value ?? "" })}
-            value={settings.data?.selectedOpenAIModel ?? ""}
+            id="current-provider-combobox"
+            items={AI_PROVIDER_IDS.map((provider) => getProviderConfig(provider))}
+            onValueChange={async (value) => {
+              const provider = parseProvider(value);
+
+              if (
+                !provider ||
+                !currentSettings ||
+                !isProviderConfigured(currentSettings, provider)
+              ) {
+                return;
+              }
+
+              await setSettings({ selectedAIProvider: provider });
+              await queryClient.invalidateQueries({ queryKey: ["settings"] });
+            }}
+            value={selectedProvider}
           >
-            <ComboboxInput placeholder="Select a framework" />
+            <ComboboxInput placeholder="Select provider..." />
             <ComboboxContent>
-              <ComboboxEmpty>No items found.</ComboboxEmpty>
+              <ComboboxEmpty>No provider found.</ComboboxEmpty>
               <ComboboxList>
-                {(models.data ?? FALLBACK_OPENAI_MODELS).map((model) => (
-                  <ComboboxItem key={model.id} value={model.id}>
-                    {model.name}
-                  </ComboboxItem>
-                ))}
+                {AI_PROVIDER_IDS.map((provider) => {
+                  const config = getProviderConfig(provider);
+                  const disabled =
+                    currentSettings === undefined ||
+                    !isProviderConfigured(currentSettings, provider);
+
+                  return (
+                    <ComboboxItem key={provider} value={provider} disabled={disabled}>
+                      {config.name}
+                    </ComboboxItem>
+                  );
+                })}
               </ComboboxList>
             </ComboboxContent>
           </Combobox>
           <p className="text-muted-foreground text-sm">
-            Models are fetched after the key is saved. The list is filtered to screenshot and text
-            capable GPT models.
+            Choose which AI provider to use for bookmark analysis
           </p>
         </div>
       </CardContent>
