@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Local first AI bookmark graph favicon</title>
+  <desc id="desc">A glossy beige circular app icon with a raised bookmark and a soft connected graph shaped like the letter B.</desc>
+  <defs>
+    <radialGradient id="bg" cx="34" cy="24" r="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff4dc"/>
+      <stop offset="0.42" stop-color="#ecd4a9"/>
+      <stop offset="1" stop-color="#b99763"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="26" y1="8" x2="100" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fffaf0" stop-opacity="0.95"/>
+      <stop offset="0.46" stop-color="#d5b77d" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#765b34" stop-opacity="0.62"/>
+    </linearGradient>
+    <linearGradient id="bookmarkFill" x1="45" y1="27" x2="88" y2="105" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff8eb"/>
+      <stop offset="0.27" stop-color="#f0d8ab"/>
+      <stop offset="0.7" stop-color="#c49b5e"/>
+      <stop offset="1" stop-color="#8b6230"/>
+    </linearGradient>
+    <linearGradient id="bookmarkEdge" x1="43" y1="28" x2="88" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="0.48" stop-color="#f3d9a8" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#5f3e1d" stop-opacity="0.8"/>
+    </linearGradient>
+    <radialGradient id="nodeGlow" cx="42%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#fffef5"/>
+      <stop offset="0.45" stop-color="#f5ddb2"/>
+      <stop offset="1" stop-color="#9b6b31"/>
+    </radialGradient>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#4c351b" flood-opacity="0.38"/>
+    </filter>
+    <filter id="bookmarkShadow" x="-35%" y="-25%" width="170%" height="160%">
+      <feDropShadow dx="0" dy="7" stdDeviation="5" flood-color="#5b3b1b" flood-opacity="0.34"/>
+    </filter>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="2.2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="roundClip">
+      <circle cx="64" cy="64" r="58"/>
+    </clipPath>
+    <bx:export>
+      <bx:file format="svg" path="Local first AI bookmark graph favicon.svg"/>
+    </bx:export>
+  </defs>
+  <circle cx="64" cy="64" r="59" fill="#8b6939" opacity="0.24"/>
+  <circle cx="64" cy="62" r="57" fill="url(#bg)" filter="url(#softShadow)"/>
+  <circle cx="64" cy="62" r="55.5" fill="none" stroke="url(#rim)" stroke-width="2.5"/>
+  <g clip-path="url(#roundClip)">
+    <path d="M20 24C31 10 54 5 78 12c18 5 32 17 39 31-20-8-47-9-72-2-13 3-24 9-34 16 1-13 3-24 9-33Z" fill="#fff" opacity="0.36"/>
+    <path d="M12 93c20 20 58 31 95 8-6 16-22 28-43 29-24 1-44-12-52-37Z" fill="#6b471f" opacity="0.15"/>
+  </g>
+  <g filter="url(#bookmarkShadow)">
+    <path d="M43 33.5C43 28.8 46.8 25 51.5 25h25C81.2 25 85 28.8 85 33.5v70.2c0 2.5-2.8 4-4.9 2.6L64 95.2l-16.1 11.1c-2.1 1.4-4.9-.1-4.9-2.6V33.5Z" fill="url(#bookmarkFill)"/>
+    <path d="M45.5 34.5C45.5 30.8 48.5 28 52.1 28h23.8c3.6 0 6.6 2.8 6.6 6.5v66.2L64 87.9l-18.5 12.8V34.5Z" fill="none" stroke="url(#bookmarkEdge)" stroke-width="2"/>
+    <path d="M48 32.8C48 31.2 49.4 29.8 51 29.8h24.6c2.4 0 4.6 1.4 5.7 3.4-10.8-1.3-22.9 1.2-33.3 6.2v-6.6Z" fill="#fff" opacity="0.42"/>
+    <path d="M81.8 49.5v51.1L64 88.3 48.1 99.4c5.2-23.3 17.1-39.6 33.7-49.9Z" fill="#704719" opacity="0.16"/>
+  </g>
+  <g filter="url(#glow)" transform="matrix(0.927988, 0, 0, 0.862847, 1.434308, 3.134127)" style="">
+    <path d="M 56 44.5 L 56 92.5 M 56 44.5 L 69.5 47 L 78 56 L 69.5 65 L 56 64.5 M 69.455 65.033 L 81 81.5 L 71.5 92.5 L 56 92.5" fill="none" stroke="#6f4b24" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.47"/>
+    <path d="M 56 44.5 L 56 92.5 M 56 44.5 L 69.5 47 L 78 56 L 69.5 65 L 56 64.5 M 56 64.5 L 69.383 65.261 L 81 81.5 L 71.5 92.5 L 56 92.5" fill="none" stroke="#fff1c7" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" opacity="0.78"/>
+    <circle cx="56" cy="44.5" r="4.5" fill="url(#nodeGlow)" stroke="#fff4d6" stroke-width="1.2"/>
+    <circle cx="69.5" cy="47" r="3.7" fill="url(#nodeGlow)" stroke="#fff4d6" stroke-width="1"/>
+    <circle cx="78" cy="56" r="4.2" fill="url(#nodeGlow)" stroke="#fff4d6" stroke-width="1.1"/>
+    <circle cx="69.117" cy="65.264" r="3.7" fill="url(#nodeGlow)" stroke="#fff4d6" stroke-width="1"/>
+    <circle cx="56" cy="64.5" r="4.1" fill="url(#nodeGlow)" stroke="#fff4d6" stroke-width="1.1"/>
+    <circle cx="81" cy="81.5" r="4.4" fill="url(#nodeGlow)" stroke="#fff4d6" stroke-width="1.1"/>
+    <circle cx="71.5" cy="92.5" r="3.8" fill="url(#nodeGlow)" stroke="#fff4d6" stroke-width="1"/>
+    <circle cx="56" cy="92.5" r="4.4" fill="url(#nodeGlow)" stroke="#fff4d6" stroke-width="1.1"/>
+  </g>
+</svg>
