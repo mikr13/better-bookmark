@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { formatBookmarkDate } from "@/lib/bookmarks/display-date";
 import {
   deleteAllBookmarks,
   exportBookmarks,
@@ -64,13 +65,13 @@ export function SavedBookmarksList() {
         <div className="space-y-3">
           {(bookmarks.data ?? []).map((bookmark) => (
             <article key={bookmark.id} className="bg-background rounded-xl border p-4">
-              <div className="flex items-start justify-between gap-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                 <div className="min-w-0">
                   <h3 className="truncate font-medium">{bookmark.title}</h3>
                   <p className="text-muted-foreground truncate text-sm">{bookmark.domain}</p>
                 </div>
-                <span className="text-muted-foreground text-xs">
-                  {new Date(bookmark.savedAt).toLocaleDateString()}
+                <span className="text-muted-foreground justify-self-end text-xs whitespace-nowrap">
+                  {formatBookmarkDate(bookmark.savedAt) ?? "Saved"}
                 </span>
               </div>
               <p className="text-muted-foreground mt-2 line-clamp-2 text-sm">{bookmark.summary}</p>

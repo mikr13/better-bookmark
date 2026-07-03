@@ -3,6 +3,20 @@ import { z } from "zod";
 export const ThemeSchema = z.enum(["system", "light", "dark"]);
 export type ThemePreference = z.infer<typeof ThemeSchema>;
 
+export const HighlightTriggerSchema = z.enum(["hover", "click"]);
+export type HighlightTrigger = z.infer<typeof HighlightTriggerSchema>;
+
+export const HighlightSiteRuleScopeSchema = z.enum(["today", "forever"]);
+export type HighlightSiteRuleScope = z.infer<typeof HighlightSiteRuleScopeSchema>;
+
+export const HighlightSiteRuleSchema = z.object({
+  host: z.string().min(1),
+  scope: HighlightSiteRuleScopeSchema,
+  createdAt: z.string().min(1),
+  expiresAt: z.string().min(1).optional(),
+});
+export type HighlightSiteRule = z.infer<typeof HighlightSiteRuleSchema>;
+
 export const ConceptKindSchema = z.enum([
   "topic",
   "entity",
@@ -121,6 +135,8 @@ export type AppSettings = {
   readonly selectedOpenAIModel: string;
   readonly openAIKeyConfigured: boolean;
   readonly highlightHostAccessGranted: boolean;
+  readonly highlightTrigger: HighlightTrigger;
+  readonly highlightSiteRules: readonly HighlightSiteRule[];
 };
 
 export const defaultSettings: AppSettings = {
@@ -128,6 +144,8 @@ export const defaultSettings: AppSettings = {
   selectedOpenAIModel: "gpt-5.5",
   openAIKeyConfigured: false,
   highlightHostAccessGranted: false,
+  highlightTrigger: "click",
+  highlightSiteRules: [],
 };
 
 export const PAGE_ANALYSIS_JSON_SCHEMA = {
