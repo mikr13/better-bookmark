@@ -6,8 +6,8 @@ export type ThemePreference = z.infer<typeof ThemeSchema>;
 export const AIProviderSchema = z.enum([
   "openai",
   "anthropic",
-  "groq",
-  "deepseek",
+  // "groq",
+  // "deepseek",
   "gemini",
   "ollama",
 ]);
@@ -159,8 +159,8 @@ export const defaultSettings: AppSettings = {
   selectedProviderModels: {
     openai: "gpt-5.5",
     anthropic: "claude-haiku-4-5-20251001",
-    groq: "llama-4-maverick",
-    deepseek: "deepseek-chat",
+    // groq: "llama-4-maverick",
+    // deepseek: "deepseek-chat",
     gemini: "models/gemini-2.5-flash",
     ollama: "llama3.2-vision",
   },
@@ -169,6 +169,21 @@ export const defaultSettings: AppSettings = {
   highlightHostAccessGranted: false,
   highlightTrigger: "click",
   highlightSiteRules: [],
+};
+
+type JsonSchemaType = "array" | "integer" | "object" | "string";
+
+type StrictJsonSchema = {
+  readonly type: JsonSchemaType;
+  readonly additionalProperties?: boolean;
+  readonly enum?: string[];
+  readonly required?: string[];
+  readonly properties?: Record<string, StrictJsonSchema>;
+  readonly items?: StrictJsonSchema;
+  readonly minItems?: number;
+  readonly maxItems?: number;
+  readonly minimum?: number;
+  readonly maximum?: number;
 };
 
 export const PAGE_ANALYSIS_JSON_SCHEMA = {
@@ -237,4 +252,4 @@ export const PAGE_ANALYSIS_JSON_SCHEMA = {
       },
     },
   },
-} as const;
+} satisfies StrictJsonSchema;

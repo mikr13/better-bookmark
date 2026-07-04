@@ -33,18 +33,18 @@ export function getAIModel(config: AIModelConfig): LanguageModel {
         apiKey: requireApiKey(config.provider, config.apiKey),
         headers: { "anthropic-dangerous-direct-browser-access": "true" },
       })(config.model);
-    case "groq":
-      return createOpenAI({
-        apiKey: requireApiKey(config.provider, config.apiKey),
-        baseURL: "https://api.groq.com/openai/v1",
-        name: "groq",
-      }).chat(config.model);
-    case "deepseek":
-      return createOpenAI({
-        apiKey: requireApiKey(config.provider, config.apiKey),
-        baseURL: "https://api.deepseek.com/v1",
-        name: "deepseek",
-      }).chat(config.model);
+    // case "groq":
+    //   return createOpenAI({
+    //     apiKey: requireApiKey(config.provider, config.apiKey),
+    //     baseURL: "https://api.groq.com/openai/v1",
+    //     name: "groq",
+    //   }).chat(config.model);
+    // case "deepseek":
+    //   return createOpenAI({
+    //     apiKey: requireApiKey(config.provider, config.apiKey),
+    //     baseURL: "https://api.deepseek.com/v1",
+    //     name: "deepseek",
+    //   }).chat(config.model);
     case "gemini":
       return createGoogleGenerativeAI({ apiKey: requireApiKey(config.provider, config.apiKey) })(
         config.model,

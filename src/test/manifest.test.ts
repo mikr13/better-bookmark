@@ -9,8 +9,8 @@ describe("extension manifest config", () => {
     expect(config).toContain('"<all_urls>"');
     expect(config).toContain('"https://api.openai.com/*"');
     expect(config).toContain('"https://api.anthropic.com/*"');
-    expect(config).toContain('"https://api.groq.com/*"');
-    expect(config).toContain('"https://api.deepseek.com/*"');
+    // expect(config).toContain('"https://api.groq.com/*"');
+    // expect(config).toContain('"https://api.deepseek.com/*"');
     expect(config).toContain('"https://generativelanguage.googleapis.com/*"');
     expect(config).toContain('"http://localhost:11434/*"');
   });

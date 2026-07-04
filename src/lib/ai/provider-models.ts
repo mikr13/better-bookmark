@@ -99,7 +99,8 @@ function sortModels(
 }
 
 async function listOpenAICompatibleModels(
-  provider: "openai" | "groq" | "deepseek",
+  // provider: "openai" | "groq" | "deepseek",
+  provider: "openai",
   apiKey: string,
 ): Promise<readonly ProviderModel[]> {
   const response = await ky.get(OPENAI_COMPATIBLE_MODELS_URLS[provider], {
@@ -212,11 +213,11 @@ export async function listProviderModels(
   try {
     switch (provider) {
       case "openai":
-      case "groq":
-      case "deepseek":
-        return apiKey
-          ? listOpenAICompatibleModels(provider, apiKey)
-          : FALLBACK_PROVIDER_MODELS[provider];
+      // case "groq":
+      // case "deepseek":
+      //   return apiKey
+      //     ? listOpenAICompatibleModels(provider, apiKey)
+      //     : FALLBACK_PROVIDER_MODELS[provider];
       case "anthropic":
         return apiKey ? listAnthropicModels(apiKey) : FALLBACK_PROVIDER_MODELS.anthropic;
       case "gemini":

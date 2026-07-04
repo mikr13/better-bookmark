@@ -16,14 +16,14 @@ describe("AI provider registry", () => {
     expect(AI_PROVIDER_IDS).toEqual([
       "openai",
       "anthropic",
-      "groq",
-      "deepseek",
+      // "groq",
+      // "deepseek",
       "gemini",
       "ollama",
     ]);
     expect(defaultModelForProvider("openai")).toBe("gpt-5.5");
     expect(defaultModelForProvider("anthropic")).toBe("claude-haiku-4-5-20251001");
-    expect(defaultModelForProvider("groq")).toBe("llama-4-maverick");
+    // expect(defaultModelForProvider("groq")).toBe("llama-4-maverick");
     expect(defaultModelForProvider("gemini")).toBe("models/gemini-2.5-flash");
     expect(defaultModelForProvider("ollama")).toBe("llama3.2-vision");
   });
@@ -31,7 +31,7 @@ describe("AI provider registry", () => {
   it("models cloud providers as key-backed and Ollama as local", () => {
     expect(providerNeedsApiKey("openai")).toBe(true);
     expect(providerNeedsApiKey("anthropic")).toBe(true);
-    expect(providerNeedsApiKey("groq")).toBe(true);
+    // expect(providerNeedsApiKey("groq")).toBe(true);
     expect(providerNeedsApiKey("gemini")).toBe(true);
     expect(providerNeedsApiKey("ollama")).toBe(false);
     expect(isProviderConfigured({ ...defaultSettings, selectedAIProvider: "ollama" })).toBe(true);
@@ -41,9 +41,9 @@ describe("AI provider registry", () => {
   it("validates provider-specific API key shapes", () => {
     expect(isPlausibleProviderKey("openai", "sk-valid-looking-key-for-test")).toBe(true);
     expect(isPlausibleProviderKey("anthropic", "sk-ant-valid-looking-key")).toBe(true);
-    expect(isPlausibleProviderKey("groq", "gsk_valid_looking_key_for_test")).toBe(true);
+    // expect(isPlausibleProviderKey("groq", "gsk_valid_looking_key_for_test")).toBe(true);
     expect(isPlausibleProviderKey("gemini", "AIza-valid-looking-key-for-test")).toBe(true);
-    expect(isPlausibleProviderKey("groq", "sk-wrong-provider-key-for-test")).toBe(false);
+    // expect(isPlausibleProviderKey("groq", "sk-wrong-provider-key-for-test")).toBe(false);
   });
 
   it("only lists screenshot-capable local model families for Ollama", () => {

@@ -66,8 +66,8 @@ export function getProviderApiKey(provider: AIProvider): Promise<string | null> 
   switch (provider) {
     case "openai":
     case "anthropic":
-    case "groq":
-    case "deepseek":
+    // case "groq":
+    // case "deepseek":
     case "gemini":
       return getStoredProviderKey(provider);
     case "ollama":

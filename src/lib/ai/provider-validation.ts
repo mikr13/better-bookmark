@@ -11,19 +11,19 @@ export async function validateProviderConnection(
   try {
     switch (provider) {
       case "openai":
-      case "groq":
-      case "deepseek": {
-        if (!apiKey) {
-          return false;
-        }
+      // case "groq":
+      // case "deepseek": {
+      //   if (!apiKey) {
+      //     return false;
+      //   }
 
-        const response = await ky.get(OPENAI_COMPATIBLE_MODELS_URLS[provider], {
-          headers: providerHeaders(getProviderConfig(provider), apiKey),
-          timeout: 10000,
-          throwHttpErrors: false,
-        });
-        return response.ok;
-      }
+      //   const response = await ky.get(OPENAI_COMPATIBLE_MODELS_URLS[provider], {
+      //     headers: providerHeaders(getProviderConfig(provider), apiKey),
+      //     timeout: 10000,
+      //     throwHttpErrors: false,
+      //   });
+      //   return response.ok;
+      // }
       case "anthropic": {
         if (!apiKey) {
           return false;

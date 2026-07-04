@@ -33,22 +33,22 @@ export const PROVIDER_REGISTRY = {
     keyPlaceholder: "sk-ant-...",
     apiKeyUrl: "https://console.anthropic.com/settings/keys",
   },
-  groq: {
-    id: "groq",
-    name: "Groq",
-    description: "Fast Llama models",
-    requiresApiKey: true,
-    keyPlaceholder: "gsk_...",
-    apiKeyUrl: "https://console.groq.com/keys",
-  },
-  deepseek: {
-    id: "deepseek",
-    name: "DeepSeek",
-    description: "DeepSeek models",
-    requiresApiKey: true,
-    keyPlaceholder: "sk-...",
-    apiKeyUrl: "https://platform.deepseek.com/api_keys",
-  },
+  // groq: {
+  //   id: "groq",
+  //   name: "Groq",
+  //   description: "Fast Llama models",
+  //   requiresApiKey: true,
+  //   keyPlaceholder: "gsk_...",
+  //   apiKeyUrl: "https://console.groq.com/keys",
+  // },
+  // deepseek: {
+  //   id: "deepseek",
+  //   name: "DeepSeek",
+  //   description: "DeepSeek models",
+  //   requiresApiKey: true,
+  //   keyPlaceholder: "sk-...",
+  //   apiKeyUrl: "https://platform.deepseek.com/api_keys",
+  // },
   gemini: {
     id: "gemini",
     name: "Google Gemini",
@@ -81,14 +81,14 @@ export const FALLBACK_PROVIDER_MODELS = {
       description: "Fast Claude multimodal model",
     },
   ],
-  groq: [
-    {
-      id: "llama-4-maverick",
-      name: "Llama 4 Maverick",
-      description: "Fast multimodal Llama model",
-    },
-  ],
-  deepseek: [{ id: "deepseek-chat", name: "DeepSeek Chat", description: "DeepSeek model" }],
+  // groq: [
+  //   {
+  //     id: "llama-4-maverick",
+  //     name: "Llama 4 Maverick",
+  //     description: "Fast multimodal Llama model",
+  //   },
+  // ],
+  // deepseek: [{ id: "deepseek-chat", name: "DeepSeek Chat", description: "DeepSeek model" }],
   gemini: [
     {
       id: "models/gemini-2.5-flash",
@@ -135,12 +135,12 @@ export function isPlausibleProviderKey(provider: AIProvider, value: string): boo
 
   switch (provider) {
     case "openai":
-    case "deepseek":
-      return trimmed.startsWith("sk-") && trimmed.length > 20;
+    // case "deepseek":
+    //   return trimmed.startsWith("sk-") && trimmed.length > 20;
     case "anthropic":
       return trimmed.startsWith("sk-ant-") && trimmed.length > 20;
-    case "groq":
-      return trimmed.startsWith("gsk_") && trimmed.length > 20;
+    // case "groq":
+    //   return trimmed.startsWith("gsk_") && trimmed.length > 20;
     case "gemini":
       return trimmed.startsWith("AIza") && trimmed.length > 20;
     case "ollama":
