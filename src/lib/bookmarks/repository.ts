@@ -205,27 +205,6 @@ export async function searchBookmarks(query: string): Promise<readonly SavedBook
   });
 }
 
-export async function listHighlightConcepts(): Promise<readonly ConceptRecord[]> {
-  const concepts = await conceptsTable().orderBy("lastSeenAt").reverse().limit(80).toArray();
-  return concepts.filter((concept) => concept.normalizedTerm.length > 2);
-}
-
-export async function bookmarksForConcept(term: string): Promise<readonly SavedBookmark[]> {
-  const normalized = normalizeTerm(term);
-  const edges = await edgesTable().where("normalizedTerm").equals(normalized).toArray();
-  const pages = await Promise.all(edges.map((edge) => pagesTable().get(edge.pageId)));
-  const hydrated = await Promise.all(
-    pages.filter((page) => page !== undefined).map((page) => hydratePage(page)),
-  );
-  return hydrated.sort((left, right) => {
-    const leftScore =
-      left.concepts.find((concept) => concept.normalizedTerm === normalized)?.score ?? 0;
-    const rightScore =
-      right.concepts.find((concept) => concept.normalizedTerm === normalized)?.score ?? 0;
-    return rightScore - leftScore;
-  });
-}
-
 export async function exportBookmarks(): Promise<string> {
   const payload = {
     schemaVersion: 1,

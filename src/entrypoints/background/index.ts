@@ -7,7 +7,7 @@ import {
   restrictLocalStorageToTrustedContexts,
   setHighlightSiteRule,
 } from "@/lib/app-storage";
-import { bookmarksForConcept, listHighlightConcepts } from "@/lib/bookmarks/repository";
+import { bookmarksForHighlightTerm, listHighlightTerms } from "@/lib/bookmarks/highlight-index";
 import { HighlightSiteRuleScopeSchema } from "@/lib/domain";
 import {
   APPLY_HIGHLIGHTS_MESSAGE,
@@ -71,7 +71,7 @@ function sendAsyncResponse(operation: Promise<unknown>, sendResponse: RuntimeSen
   });
 }
 
-async function bookmarkPreviewsForConcept(term: string): Promise<
+async function bookmarkPreviewsForTerm(term: string): Promise<
   readonly {
     readonly title: string;
     readonly url: string;
@@ -80,7 +80,7 @@ async function bookmarkPreviewsForConcept(term: string): Promise<
     readonly savedAt: string;
   }[]
 > {
-  const bookmarks = await bookmarksForConcept(term);
+  const bookmarks = await bookmarksForHighlightTerm(term);
   return bookmarks.slice(0, 8).map((bookmark) => ({
     title: bookmark.title,
     url: bookmark.url,
@@ -174,20 +174,20 @@ export default defineBackground(() => {
       return true;
     }
 
-    if (type === "BETTER_BOOKMARKS_LIST_HIGHLIGHT_CONCEPTS") {
-      sendAsyncResponse(listHighlightConcepts(), sendResponse);
+    if (type === "BETTER_BOOKMARKS_LIST_HIGHLIGHT_TERMS") {
+      sendAsyncResponse(listHighlightTerms(), sendResponse);
       return true;
     }
 
-    if (type === "BETTER_BOOKMARKS_BOOKMARKS_FOR_CONCEPT") {
+    if (type === "BETTER_BOOKMARKS_BOOKMARKS_FOR_HIGHLIGHT_TERM") {
       const term = messageStringField(message, "term");
 
       if (!term) {
-        sendResponse({ error: "Missing concept term." });
+        sendResponse({ error: "Missing highlight term." });
         return false;
       }
 
-      sendAsyncResponse(bookmarkPreviewsForConcept(term), sendResponse);
+      sendAsyncResponse(bookmarkPreviewsForTerm(term), sendResponse);
       return true;
     }
 

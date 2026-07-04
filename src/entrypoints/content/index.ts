@@ -2,14 +2,9 @@ import { browser } from "wxt/browser";
 import { defineContentScript } from "wxt/utils/define-content-script";
 import { z } from "zod";
 
-import {
-  ConceptRecordSchema,
-  defaultSettings,
-  type ConceptRecord,
-  type HighlightSiteRuleScope,
-} from "@/lib/domain";
+import { defaultSettings, type HighlightSiteRuleScope } from "@/lib/domain";
 import { extractCurrentPage } from "@/lib/page/extract";
-import { resetHighlightElements } from "@/lib/page/highlight-dom";
+import { applyHighlightTerms, resetHighlightElements } from "@/lib/page/highlight-dom";
 import {
   APPLY_HIGHLIGHTS_MESSAGE,
   GET_HIGHLIGHT_SETTINGS_MESSAGE,
@@ -30,9 +25,7 @@ import {
   resolveHighlightTheme,
   type PublicHighlightSettings,
 } from "@/lib/page/highlight-settings";
-
-const SKIP_SELECTOR =
-  "script, style, textarea, input, select, option, button, a, [contenteditable='true'], [data-better-bookmarks]";
+import { HighlightTermSchema, type HighlightTerm } from "@/lib/page/highlight-term";
 
 const ErrorResponseSchema = z.object({
   error: z.string(),
@@ -79,12 +72,12 @@ function throwIfErrorResponse(response: unknown): void {
   }
 }
 
-async function requestHighlightConcepts(): Promise<readonly ConceptRecord[]> {
+async function requestHighlightTerms(): Promise<readonly HighlightTerm[]> {
   const response: unknown = await browser.runtime.sendMessage({
-    type: "BETTER_BOOKMARKS_LIST_HIGHLIGHT_CONCEPTS",
+    type: "BETTER_BOOKMARKS_LIST_HIGHLIGHT_TERMS",
   });
   throwIfErrorResponse(response);
-  return z.array(ConceptRecordSchema).parse(response);
+  return z.array(HighlightTermSchema).parse(response);
 }
 
 async function requestHighlightSettings(): Promise<PublicHighlightSettings> {
@@ -95,9 +88,9 @@ async function requestHighlightSettings(): Promise<PublicHighlightSettings> {
   return PublicHighlightSettingsSchema.parse(response);
 }
 
-async function requestBookmarksForConcept(term: string): Promise<readonly BookmarkPreview[]> {
+async function requestBookmarksForTerm(term: string): Promise<readonly BookmarkPreview[]> {
   const response: unknown = await browser.runtime.sendMessage({
-    type: "BETTER_BOOKMARKS_BOOKMARKS_FOR_CONCEPT",
+    type: "BETTER_BOOKMARKS_BOOKMARKS_FOR_HIGHLIGHT_TERM",
     term,
   });
   throwIfErrorResponse(response);
@@ -115,85 +108,12 @@ async function suppressCurrentHighlightSite(scope: HighlightSiteRuleScope): Prom
   await applyHighlights(settings);
 }
 
-function candidateTextNodes(): readonly Node[] {
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-  const nodes: Node[] = [];
-  let current = walker.nextNode();
-
-  while (current) {
-    if (current.nodeType === Node.TEXT_NODE) {
-      const text = current.textContent ?? "";
-      const parent = current.parentElement;
-      if (
-        text.trim().length > 24 &&
-        parent &&
-        !parent.closest(SKIP_SELECTOR) &&
-        !parent.hasAttribute("data-better-bookmarks")
-      ) {
-        nodes.push(current);
-      }
-    }
-    current = walker.nextNode();
-  }
-
-  return nodes;
-}
-
-function termsForConcept(concept: ConceptRecord): readonly string[] {
-  return [concept.normalizedTerm, ...concept.aliases]
-    .filter((term) => term.length > 2)
-    .sort((left, right) => right.length - left.length);
-}
-
-function findMatch(
-  text: string,
-  concepts: readonly ConceptRecord[],
-): {
-  readonly concept: ConceptRecord;
-  readonly index: number;
-  readonly length: number;
-} | null {
-  const lower = text.toLocaleLowerCase();
-
-  for (const concept of concepts) {
-    for (const term of termsForConcept(concept)) {
-      const index = lower.indexOf(term);
-      if (index >= 0) {
-        return { concept, index, length: term.length };
-      }
-    }
-  }
-
-  return null;
-}
-
-function wrapMatch(node: Node, concepts: readonly ConceptRecord[]): boolean {
-  const text = node.textContent ?? "";
-  const match = findMatch(text, concepts);
-
-  if (!match || node.nodeType !== Node.TEXT_NODE) {
-    return false;
-  }
-
-  const selected = Text.prototype.splitText.call(node, match.index);
-  Text.prototype.splitText.call(selected, match.length);
-  const mark = document.createElement("mark");
-  mark.className = HIGHLIGHT_CLASS;
-  mark.setAttribute("data-better-bookmarks", "highlight");
-  mark.setAttribute("data-term", match.concept.normalizedTerm);
-  mark.tabIndex = 0;
-  mark.textContent = selected.textContent;
-  selected.replaceWith(mark);
-  attachHighlightTrigger(mark, match.concept.normalizedTerm);
-  return true;
-}
-
 function attachHighlightTrigger(mark: HTMLElement, term: string): void {
   const openPopover = (): void => {
     void showHighlightPopover({
       mark,
       term,
-      loadBookmarks: requestBookmarksForConcept,
+      loadBookmarks: requestBookmarksForTerm,
       theme: resolveHighlightTheme(activeHighlightSettings.theme),
       onDismissSite: suppressCurrentHighlightSite,
     });
@@ -233,22 +153,19 @@ async function applyHighlights(settings?: PublicHighlightSettings): Promise<void
     return;
   }
 
-  const concepts = await requestHighlightConcepts();
+  const terms = await requestHighlightTerms();
 
-  if (concepts.length === 0) {
+  if (terms.length === 0) {
     return;
   }
 
-  let count = 0;
-  for (const node of candidateTextNodes()) {
-    if (count >= 12) {
-      break;
-    }
-
-    if (wrapMatch(node, concepts)) {
-      count += 1;
-    }
-  }
+  applyHighlightTerms({
+    terms,
+    className: HIGHLIGHT_CLASS,
+    onHighlight: (mark, term) => {
+      attachHighlightTrigger(mark, term.normalizedTerm);
+    },
+  });
 }
 
 export default defineContentScript({
