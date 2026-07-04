@@ -4,7 +4,6 @@ export {
   PROVIDER_REGISTRY,
   defaultModelForProvider,
   getProviderConfig,
-  isPlausibleProviderKey,
   isProviderConfigured,
   providerNeedsApiKey,
   selectedModelForProvider,

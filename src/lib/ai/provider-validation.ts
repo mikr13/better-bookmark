@@ -1,6 +1,6 @@
 import ky from "ky";
 
-import { providerHeaders } from "@/lib/ai/provider-http";
+import { OPENAI_COMPATIBLE_MODELS_URLS, providerHeaders } from "@/lib/ai/provider-http";
 import { getProviderConfig } from "@/lib/ai/provider-registry";
 import type { AIProvider } from "@/lib/domain";
 
@@ -10,7 +10,18 @@ export async function validateProviderConnection(
 ): Promise<boolean> {
   try {
     switch (provider) {
-      case "openai":
+      case "openai": {
+        if (!apiKey) {
+          return false;
+        }
+
+        const response = await ky.get(OPENAI_COMPATIBLE_MODELS_URLS[provider], {
+          headers: providerHeaders(getProviderConfig(provider), apiKey),
+          timeout: 10000,
+          throwHttpErrors: false,
+        });
+        return response.ok;
+      }
       // case "groq":
       // case "deepseek": {
       //   if (!apiKey) {

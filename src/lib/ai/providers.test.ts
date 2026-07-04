@@ -5,7 +5,6 @@ import {
   FALLBACK_PROVIDER_MODELS,
   defaultModelForProvider,
   isMultimodalOllamaModel,
-  isPlausibleProviderKey,
   isProviderConfigured,
   providerNeedsApiKey,
 } from "@/lib/ai/providers";
@@ -36,14 +35,6 @@ describe("AI provider registry", () => {
     expect(providerNeedsApiKey("ollama")).toBe(false);
     expect(isProviderConfigured({ ...defaultSettings, selectedAIProvider: "ollama" })).toBe(true);
     expect(isProviderConfigured({ ...defaultSettings, selectedAIProvider: "openai" })).toBe(false);
-  });
-
-  it("validates provider-specific API key shapes", () => {
-    expect(isPlausibleProviderKey("openai", "sk-valid-looking-key-for-test")).toBe(true);
-    expect(isPlausibleProviderKey("anthropic", "sk-ant-valid-looking-key")).toBe(true);
-    // expect(isPlausibleProviderKey("groq", "gsk_valid_looking_key_for_test")).toBe(true);
-    expect(isPlausibleProviderKey("gemini", "AIza-valid-looking-key-for-test")).toBe(true);
-    // expect(isPlausibleProviderKey("groq", "sk-wrong-provider-key-for-test")).toBe(false);
   });
 
   it("only lists screenshot-capable local model families for Ollama", () => {

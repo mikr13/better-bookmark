@@ -1,7 +1,11 @@
 import ky from "ky";
 import { z } from "zod";
 
-import { OPENAI_COMPATIBLE_MODELS_URLS, providerHeaders } from "@/lib/ai/provider-http";
+import {
+  OPENAI_COMPATIBLE_MODELS_URLS,
+  providerHeaders,
+  type OpenAICompatibleProvider,
+} from "@/lib/ai/provider-http";
 import { FALLBACK_PROVIDER_MODELS, getProviderConfig } from "@/lib/ai/provider-registry";
 import type { AIProvider, ProviderModel } from "@/lib/domain";
 
@@ -98,34 +102,33 @@ function sortModels(
   });
 }
 
-// async function listOpenAICompatibleModels(
-//   // provider: "openai" | "groq" | "deepseek",
-//   provider: "openai",
-//   apiKey: string,
-// ): Promise<readonly ProviderModel[]> {
-//   const response = await ky.get(OPENAI_COMPATIBLE_MODELS_URLS[provider], {
-//     headers: providerHeaders(getProviderConfig(provider), apiKey),
-//     timeout: 10000,
-//     throwHttpErrors: false,
-//   });
+async function listOpenAICompatibleModels(
+  provider: OpenAICompatibleProvider,
+  apiKey: string,
+): Promise<readonly ProviderModel[]> {
+  const response = await ky.get(OPENAI_COMPATIBLE_MODELS_URLS[provider], {
+    headers: providerHeaders(getProviderConfig(provider), apiKey),
+    timeout: 10000,
+    throwHttpErrors: false,
+  });
 
-//   if (!response.ok) {
-//     return FALLBACK_PROVIDER_MODELS[provider];
-//   }
+  if (!response.ok) {
+    return FALLBACK_PROVIDER_MODELS[provider];
+  }
 
-//   const parsed = OpenAIModelsResponseSchema.safeParse(await response.json<unknown>());
+  const parsed = OpenAIModelsResponseSchema.safeParse(await response.json<unknown>());
 
-//   if (!parsed.success) {
-//     return FALLBACK_PROVIDER_MODELS[provider];
-//   }
+  if (!parsed.success) {
+    return FALLBACK_PROVIDER_MODELS[provider];
+  }
 
-//   const models = parsed.data.data
-//     .map((model) => model.id)
-//     .filter((id) => provider !== "openai" || isMultimodalOpenAIModel(id))
-//     .map((id) => ({ id, name: modelName(id), description: "Available provider model" }));
+  const models = parsed.data.data
+    .map((model) => model.id)
+    .filter(isMultimodalOpenAIModel)
+    .map((id) => ({ id, name: modelName(id), description: "Available provider model" }));
 
-//   return models.length > 0 ? sortModels(provider, models) : FALLBACK_PROVIDER_MODELS[provider];
-// }
+  return models.length > 0 ? sortModels(provider, models) : FALLBACK_PROVIDER_MODELS[provider];
+}
 
 async function listAnthropicModels(apiKey: string): Promise<readonly ProviderModel[]> {
   const response = await ky.get("https://api.anthropic.com/v1/models", {
@@ -213,11 +216,9 @@ export async function listProviderModels(
   try {
     switch (provider) {
       case "openai":
-      // case "groq":
-      // case "deepseek":
-      //   return apiKey
-      //     ? listOpenAICompatibleModels(provider, apiKey)
-      //     : FALLBACK_PROVIDER_MODELS[provider];
+        return apiKey
+          ? listOpenAICompatibleModels(provider, apiKey)
+          : FALLBACK_PROVIDER_MODELS[provider];
       case "anthropic":
         return apiKey ? listAnthropicModels(apiKey) : FALLBACK_PROVIDER_MODELS.anthropic;
       case "gemini":

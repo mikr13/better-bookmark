@@ -1,12 +1,8 @@
-import { isPlausibleProviderKey, providerNeedsApiKey } from "@/lib/ai/providers";
+import { providerNeedsApiKey } from "@/lib/ai/providers";
 import { appSettingsItem, keyVaultItem, setSettings } from "@/lib/app-storage";
 import type { AIProvider } from "@/lib/domain";
 import { decryptText, encryptText, generateSalt } from "@/lib/security/encryption";
 import { getBrowserFingerprint } from "@/lib/security/fingerprint";
-
-export function isPlausibleOpenAIKey(value: string): boolean {
-  return isPlausibleProviderKey("openai", value);
-}
 
 export async function storeProviderKey(provider: AIProvider, apiKey: string): Promise<void> {
   const trimmed = apiKey.trim();
@@ -15,8 +11,8 @@ export async function storeProviderKey(provider: AIProvider, apiKey: string): Pr
     return;
   }
 
-  if (!isPlausibleProviderKey(provider, trimmed)) {
-    throw new Error("API key format is invalid.");
+  if (trimmed.length === 0) {
+    throw new Error("API key is required.");
   }
 
   const salt = await generateSalt();

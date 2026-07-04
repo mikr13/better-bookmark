@@ -48,11 +48,19 @@ describe("isMultimodalOpenAIModel", () => {
 
   it("reports valid OpenAI keys when validation succeeds", async () => {
     const originalFetch = globalThis.fetch;
-    globalThis.fetch = async () =>
-      new Response(JSON.stringify({ data: [{ id: "gpt-5.5" }] }), { status: 200 });
+    let requestUrl: string | null = null;
+    let authorization: string | null = null;
+    globalThis.fetch = async (input, init) => {
+      const request = new Request(input, init);
+      requestUrl = request.url;
+      authorization = request.headers.get("authorization");
+      return new Response(JSON.stringify({ data: [{ id: "gpt-5.5" }] }), { status: 200 });
+    };
 
     try {
       await expect(validateOpenAIKey("sk-valid-looking-key-for-test")).resolves.toBe(true);
+      expect(requestUrl).toBe("https://api.openai.com/v1/models");
+      expect(authorization).toBe("Bearer sk-valid-looking-key-for-test");
     } finally {
       globalThis.fetch = originalFetch;
     }

@@ -12,6 +12,7 @@ export const OPENAI_COMPATIBLE_MODELS_URLS = {
 export function providerHeaders(config: ProviderConfig, apiKey: string): Record<string, string> {
   switch (config.id) {
     case "openai":
+      return { Authorization: `Bearer ${apiKey}` };
     // case "groq":
     // case "deepseek":
     //   return { Authorization: `Bearer ${apiKey}` };

@@ -9,7 +9,6 @@ import {
   AI_PROVIDER_IDS,
   defaultModelForProvider,
   getProviderConfig,
-  isPlausibleProviderKey,
   isProviderConfigured,
   listProviderModels,
   providerNeedsApiKey,
@@ -48,10 +47,6 @@ export function ProviderSettings() {
       const key = providerKeys[provider]?.trim() ?? "";
 
       if (providerNeedsApiKey(provider)) {
-        if (!isPlausibleProviderKey(provider, key)) {
-          throw new Error(`${getProviderConfig(provider).name} API key format is invalid.`);
-        }
-
         const isValid = await validateProviderConnection(provider, key);
 
         if (!isValid) {

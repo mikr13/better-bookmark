@@ -129,21 +129,3 @@ export function defaultModelForProvider(provider: AIProvider): string {
 export function selectedModelForProvider(settings: AppSettings, provider: AIProvider): string {
   return settings.selectedProviderModels[provider] ?? defaultModelForProvider(provider);
 }
-
-export function isPlausibleProviderKey(provider: AIProvider, value: string): boolean {
-  const trimmed = value.trim();
-
-  switch (provider) {
-    case "openai":
-    // case "deepseek":
-    //   return trimmed.startsWith("sk-") && trimmed.length > 20;
-    case "anthropic":
-      return trimmed.startsWith("sk-ant-") && trimmed.length > 20;
-    // case "groq":
-    //   return trimmed.startsWith("gsk_") && trimmed.length > 20;
-    case "gemini":
-      return trimmed.startsWith("AIza") && trimmed.length > 20;
-    case "ollama":
-      return true;
-  }
-}

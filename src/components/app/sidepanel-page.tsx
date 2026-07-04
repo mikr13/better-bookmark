@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Loader2, Search, Settings } from "lucide-react";
+import { AlertCircle, BookOpen, Loader2, Search, Settings } from "lucide-react";
 import { useState } from "react";
 import { browser } from "wxt/browser";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +27,14 @@ type ActiveTab = {
   readonly url: string;
   readonly windowId?: number;
 };
+
+type SaveStatus =
+  | { readonly kind: "idle"; readonly message: string }
+  | { readonly kind: "progress"; readonly message: string }
+  | { readonly kind: "success"; readonly message: string }
+  | { readonly kind: "error"; readonly message: string };
+
+const READY_STATUS: SaveStatus = { kind: "idle", message: "Ready" };
 
 async function activeTab(): Promise<ActiveTab> {
   const tabs = await browser.tabs.query({ active: true, currentWindow: true });
@@ -66,7 +75,7 @@ async function captureScreenshot(windowId?: number): Promise<string> {
 export function SidepanelPage() {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<string>("Ready");
+  const [status, setStatus] = useState<SaveStatus>(READY_STATUS);
   const bookmarks = useQuery({
     queryKey: ["bookmarks", query],
     queryFn: () => searchBookmarks(query),
@@ -77,7 +86,7 @@ export function SidepanelPage() {
   });
   const savePage = useMutation({
     mutationFn: async () => {
-      setStatus("Capturing page");
+      setStatus({ kind: "progress", message: "Capturing page" });
       const tab = await activeTab();
       const page = await extractActivePage(tab.id);
       const screenshotDataUrl = await captureScreenshot(tab.windowId);
@@ -94,14 +103,14 @@ export function SidepanelPage() {
         throw new Error(`Add your ${providerConfig.name} API key in settings first.`);
       }
 
-      setStatus(`Analyzing with ${providerConfig.name}`);
+      setStatus({ kind: "progress", message: `Analyzing with ${providerConfig.name}` });
       const model = selectedModelForProvider(currentSettings, provider);
       const { analyzePageWithProvider } = await import("@/lib/ai/page-analysis");
       const analysisInput = apiKey
         ? { provider, apiKey, model, page, screenshotDataUrl }
         : { provider, model, page, screenshotDataUrl };
       const analysis = await analyzePageWithProvider(analysisInput);
-      setStatus("Saving graph");
+      setStatus({ kind: "progress", message: "Saving graph" });
       return saveAnalyzedBookmark({
         page,
         analysis,
@@ -115,12 +124,12 @@ export function SidepanelPage() {
       });
     },
     onSuccess: async () => {
-      setStatus("Saved");
+      setStatus({ kind: "success", message: "Saved" });
       await queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
       await browser.runtime.sendMessage({ type: REFRESH_HIGHLIGHTS_MESSAGE });
     },
     onError: (error) => {
-      setStatus(pageSaveFailureMessage(error));
+      setStatus({ kind: "error", message: pageSaveFailureMessage(error) });
     },
   });
   const readyToSave = settings.data ? isProviderConfigured(settings.data) : false;
@@ -130,7 +139,9 @@ export function SidepanelPage() {
       <div className="mb-3 flex items-center justify-between gap-2">
         <div>
           <h1 className="text-lg font-semibold">Better Bookmarks</h1>
-          <p className="text-muted-foreground text-xs">{status}</p>
+          <p className="text-muted-foreground text-xs">
+            {status.kind === "error" ? "Save needs attention" : status.message}
+          </p>
         </div>
         <Button
           type="button"
@@ -142,6 +153,13 @@ export function SidepanelPage() {
           <Settings />
         </Button>
       </div>
+      {status.kind === "error" ? (
+        <Alert variant="destructive" className="mb-3 rounded-xl px-3 py-2">
+          <AlertCircle className="size-4" />
+          <AlertTitle>Save failed</AlertTitle>
+          <AlertDescription>{status.message}</AlertDescription>
+        </Alert>
+      ) : null}
       <section className="grid gap-3">
         <Card>
           <CardHeader>
