@@ -1,6 +1,6 @@
 import ky from "ky";
 
-import { OPENAI_COMPATIBLE_MODELS_URLS, providerHeaders } from "@/lib/ai/provider-http";
+import { providerHeaders } from "@/lib/ai/provider-http";
 import { getProviderConfig } from "@/lib/ai/provider-registry";
 import type { AIProvider } from "@/lib/domain";
 

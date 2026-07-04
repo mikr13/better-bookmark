@@ -98,34 +98,34 @@ function sortModels(
   });
 }
 
-async function listOpenAICompatibleModels(
-  // provider: "openai" | "groq" | "deepseek",
-  provider: "openai",
-  apiKey: string,
-): Promise<readonly ProviderModel[]> {
-  const response = await ky.get(OPENAI_COMPATIBLE_MODELS_URLS[provider], {
-    headers: providerHeaders(getProviderConfig(provider), apiKey),
-    timeout: 10000,
-    throwHttpErrors: false,
-  });
+// async function listOpenAICompatibleModels(
+//   // provider: "openai" | "groq" | "deepseek",
+//   provider: "openai",
+//   apiKey: string,
+// ): Promise<readonly ProviderModel[]> {
+//   const response = await ky.get(OPENAI_COMPATIBLE_MODELS_URLS[provider], {
+//     headers: providerHeaders(getProviderConfig(provider), apiKey),
+//     timeout: 10000,
+//     throwHttpErrors: false,
+//   });
 
-  if (!response.ok) {
-    return FALLBACK_PROVIDER_MODELS[provider];
-  }
+//   if (!response.ok) {
+//     return FALLBACK_PROVIDER_MODELS[provider];
+//   }
 
-  const parsed = OpenAIModelsResponseSchema.safeParse(await response.json<unknown>());
+//   const parsed = OpenAIModelsResponseSchema.safeParse(await response.json<unknown>());
 
-  if (!parsed.success) {
-    return FALLBACK_PROVIDER_MODELS[provider];
-  }
+//   if (!parsed.success) {
+//     return FALLBACK_PROVIDER_MODELS[provider];
+//   }
 
-  const models = parsed.data.data
-    .map((model) => model.id)
-    .filter((id) => provider !== "openai" || isMultimodalOpenAIModel(id))
-    .map((id) => ({ id, name: modelName(id), description: "Available provider model" }));
+//   const models = parsed.data.data
+//     .map((model) => model.id)
+//     .filter((id) => provider !== "openai" || isMultimodalOpenAIModel(id))
+//     .map((id) => ({ id, name: modelName(id), description: "Available provider model" }));
 
-  return models.length > 0 ? sortModels(provider, models) : FALLBACK_PROVIDER_MODELS[provider];
-}
+//   return models.length > 0 ? sortModels(provider, models) : FALLBACK_PROVIDER_MODELS[provider];
+// }
 
 async function listAnthropicModels(apiKey: string): Promise<readonly ProviderModel[]> {
   const response = await ky.get("https://api.anthropic.com/v1/models", {
