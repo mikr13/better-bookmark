@@ -1,133 +1,177 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FileUp, Search, Trash2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { browser } from "wxt/browser";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { BookmarkForm } from "@/components/app/bookmark-form";
+import { BookmarkListPanel } from "@/components/app/bookmark-list-panel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { formatBookmarkDate } from "@/lib/bookmarks/display-date";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  deleteAllBookmarks,
+  createManualBookmark,
+  deleteBookmark,
   exportBookmarks,
   importBookmarks,
   searchBookmarks,
+  updateManualBookmark,
 } from "@/lib/bookmarks/repository";
+import type { ManualBookmarkInput } from "@/lib/bookmarks/repository";
+import type { SavedBookmark } from "@/lib/domain";
+import { REFRESH_HIGHLIGHTS_MESSAGE } from "@/lib/page/highlight-messages";
+
+function messageFromError(error: unknown): string {
+  return error instanceof Error ? error.message : "Bookmark operation failed.";
+}
 
 export function SavedBookmarksList() {
   const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
   const [query, setQuery] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [status, setStatus] = useState("Ready to save manually.");
   const bookmarks = useQuery({
     queryKey: ["bookmarks", query],
     queryFn: () => searchBookmarks(query),
   });
-  const deleteAll = useMutation({
-    mutationFn: deleteAllBookmarks,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bookmarks"] }),
-  });
+  const selectedBookmark = bookmarks.data?.find((bookmark) => bookmark.id === selectedId) ?? null;
 
-  async function downloadExport(): Promise<void> {
-    const payload = await exportBookmarks();
-    const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `better-bookmarks-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+  async function refreshBookmarkSurfaces(): Promise<void> {
+    await queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
+    await browser.runtime.sendMessage({ type: REFRESH_HIGHLIGHTS_MESSAGE });
   }
 
-  async function handleImport(file: File | null): Promise<void> {
+  const saveManual = useMutation({
+    mutationFn: async (input: ManualBookmarkInput) => {
+      if (selectedBookmark) {
+        return updateManualBookmark(selectedBookmark.id, input);
+      }
+
+      return createManualBookmark(input);
+    },
+    onSuccess: async () => {
+      setSelectedId(null);
+      setStatus(selectedBookmark ? "Bookmark updated." : "Bookmark saved.");
+      await refreshBookmarkSurfaces();
+    },
+    onError: (error) => setStatus(messageFromError(error)),
+  });
+  const deleteSingle = useMutation({
+    mutationFn: deleteBookmark,
+    onSuccess: async (_deletedPageId, pageId) => {
+      setStatus("Bookmark deleted.");
+      if (selectedId === pageId) {
+        setSelectedId(null);
+      }
+      await refreshBookmarkSurfaces();
+    },
+    onError: (error) => setStatus(messageFromError(error)),
+  });
+  const importFile = useMutation({
+    mutationFn: async (file: File) => {
+      await importBookmarks(await file.text());
+    },
+    onSuccess: async () => {
+      setStatus("Bookmarks imported.");
+      setSelectedId(null);
+      await refreshBookmarkSurfaces();
+    },
+    onError: (error) => setStatus(messageFromError(error)),
+  });
+
+  useEffect(() => {
+    if (!selectedId || !bookmarks.data) {
+      return;
+    }
+
+    if (!bookmarks.data.some((bookmark) => bookmark.id === selectedId)) {
+      setSelectedId(null);
+    }
+  }, [bookmarks.data, selectedId]);
+
+  async function downloadExport(): Promise<void> {
+    try {
+      const payload = await exportBookmarks();
+      const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `better-bookmarks-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus("Export downloaded.");
+    } catch (error) {
+      setStatus(messageFromError(error));
+    }
+  }
+
+  function handleImport(file: File | null): void {
     if (!file) {
       return;
     }
 
-    await importBookmarks(await file.text());
-    await queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
+    importFile.mutate(file);
+  }
+
+  function handleCancelEdit(): void {
+    setSelectedId(null);
+    setStatus("Ready to save manually.");
+  }
+
+  async function submitManualBookmark(input: ManualBookmarkInput): Promise<void> {
+    await saveManual.mutateAsync(input);
+  }
+
+  function handleDeleteBookmark(bookmark: SavedBookmark): void {
+    deleteSingle.mutate(bookmark.id);
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Saved Bookmarks</CardTitle>
-        <CardDescription>Local graph records. Exports exclude API keys.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="relative">
-          <Search className="text-muted-foreground absolute top-2.5 left-3 size-4" />
-          <Input
-            className="pl-9"
-            placeholder="Search title, summary, domain, or concept"
-            value={query}
-            onChange={(event) => setQuery(event.currentTarget.value)}
-          />
-        </div>
-        <div className="space-y-3">
-          {(bookmarks.data ?? []).map((bookmark) => (
-            <article key={bookmark.id} className="bg-background rounded-xl border p-4">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-                <div className="min-w-0">
-                  <h3 className="truncate font-medium">{bookmark.title}</h3>
-                  <p className="text-muted-foreground truncate text-sm">{bookmark.domain}</p>
-                </div>
-                <span className="text-muted-foreground justify-self-end text-xs whitespace-nowrap">
-                  {formatBookmarkDate(bookmark.savedAt) ?? "Saved"}
-                </span>
-              </div>
-              <p className="text-muted-foreground mt-2 line-clamp-2 text-sm">{bookmark.summary}</p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {bookmark.concepts.slice(0, 6).map((concept) => (
-                  <Badge key={concept.id} variant="secondary">
-                    {concept.term} {concept.score}
-                  </Badge>
-                ))}
-              </div>
-            </article>
-          ))}
-          {(bookmarks.data ?? []).length === 0 ? (
-            <div className="text-muted-foreground rounded-xl border border-dashed p-8 text-center text-sm">
-              No saved bookmarks yet.
+    <TooltipProvider>
+      <section className="h-[calc(100dvh-8rem)] min-h-[680px] min-w-0 overflow-x-hidden">
+        <ResizablePanelGroup
+          orientation={isMobile ? "vertical" : "horizontal"}
+          className="h-full max-w-full min-w-0 overflow-hidden"
+        >
+          <ResizablePanel defaultSize={50} minSize={30} className="min-w-0">
+            <div className="h-full min-w-0 overflow-auto p-4">
+              <BookmarkListPanel
+                bookmarks={bookmarks.data ?? []}
+                isImporting={importFile.isPending}
+                onDelete={handleDeleteBookmark}
+                onEdit={(nextBookmark) => setSelectedId(nextBookmark.id)}
+                onExport={() => void downloadExport()}
+                onImport={handleImport}
+                onQueryChange={setQuery}
+                query={query}
+              />
             </div>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
-          <span className="text-muted-foreground text-sm">
-            Showing {(bookmarks.data ?? []).length} entries
-          </span>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="icon" onClick={downloadExport}>
-              <Download />
-              <span className="sr-only">Export bookmarks</span>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <FileUp />
-              <span className="sr-only">Import bookmarks</span>
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              disabled={deleteAll.isPending}
-              onClick={() => deleteAll.mutate()}
-            >
-              <Trash2 />
-              <span className="sr-only">Delete local bookmarks</span>
-            </Button>
-            <input
-              ref={fileInputRef}
-              className="hidden"
-              type="file"
-              accept="application/json"
-              onChange={(event) => handleImport(event.currentTarget.files?.item(0) ?? null)}
-            />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={50} minSize={30} className="min-w-0">
+            <div className="h-full min-w-0 overflow-auto p-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{selectedBookmark ? "Edit Bookmark" : "Add Bookmark"}</CardTitle>
+                  <CardDescription>
+                    {selectedBookmark
+                      ? "Update an existing saved bookmark."
+                      : "Create a new bookmark with a URL and manual tags."}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BookmarkForm
+                    bookmark={selectedBookmark}
+                    isSaving={saveManual.isPending}
+                    status={status}
+                    onSubmit={submitManualBookmark}
+                    {...(selectedBookmark ? { onCancel: handleCancelEdit } : {})}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </section>
+    </TooltipProvider>
   );
 }

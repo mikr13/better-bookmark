@@ -100,6 +100,7 @@ export type BookmarkPageRecord = {
   readonly domain: string;
   readonly description?: string;
   readonly summary: string;
+  readonly tags: readonly string[];
   readonly savedAt: string;
   readonly updatedAt: string;
 };
@@ -119,6 +120,7 @@ export type PageConceptEdgeRecord = {
   readonly pageId: string;
   readonly conceptId: string;
   readonly normalizedTerm: string;
+  readonly source?: "ai" | "manual";
   readonly aiRelevance: number;
   readonly modelConfidence: number;
   readonly pageKeywordScore: number;
