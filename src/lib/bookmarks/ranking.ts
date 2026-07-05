@@ -110,6 +110,7 @@ export function edgeFromKeyword(
     pageId,
     conceptId,
     normalizedTerm: keyword.normalizedTerm,
+    source: "ai",
     aiRelevance: keyword.relevance,
     modelConfidence: keyword.confidence,
     pageKeywordScore: scoreKeyword(keyword, page),

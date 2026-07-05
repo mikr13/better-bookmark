@@ -10,6 +10,7 @@ function bookmark(id: string, title: string, concepts: SavedBookmark["concepts"]
     url: `https://example.com/${id}`,
     domain: "example.com",
     summary: `${title} summary`,
+    tags: [],
     savedAt: `2026-07-0${id === "one" ? "3" : "2"}T00:00:00.000Z`,
     updatedAt: `2026-07-0${id === "one" ? "3" : "2"}T00:00:00.000Z`,
     concepts,

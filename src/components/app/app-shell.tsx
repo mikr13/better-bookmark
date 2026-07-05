@@ -23,15 +23,15 @@ export function AppShell({
   return (
     <div className="bg-background text-foreground min-h-[100dvh]">
       <header className="bg-background/92 sticky top-0 z-20 border-b backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-          <div className="flex items-center gap-2 font-semibold">
+        <div className="mx-auto flex min-h-14 max-w-6xl flex-wrap items-center gap-2 px-4 py-2 sm:h-14 sm:flex-nowrap sm:gap-3 sm:py-0">
+          <div className="flex min-w-0 items-center gap-2 font-semibold">
             <span className="bg-primary text-primary-foreground grid size-8 place-items-center rounded-lg">
               <BookMarked className="size-4" />
             </span>
-            <span>Better Bookmarks</span>
+            <span className="whitespace-nowrap">Better Bookmarks</span>
           </div>
           {onTabChange ? (
-            <nav className="bg-muted mx-auto grid w-full max-w-xl grid-cols-3 rounded-xl p-1">
+            <nav className="bg-muted order-3 grid w-full grid-cols-3 rounded-xl p-1 sm:order-none sm:mx-auto sm:max-w-xl">
               <button
                 type="button"
                 className={cn(

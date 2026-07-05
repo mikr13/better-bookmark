@@ -14,6 +14,7 @@ function bookmark(
     url: `https://en.wikipedia.org/wiki/${id}`,
     domain: "en.wikipedia.org",
     summary: `${title} summary`,
+    tags: [],
     savedAt: "2026-07-03T00:00:00.000Z",
     updatedAt: "2026-07-03T00:00:00.000Z",
     concepts,
